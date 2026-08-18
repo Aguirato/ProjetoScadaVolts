@@ -1,0 +1,213 @@
+{
+  "_comentario": "Configuração das Usinas — edite os IPs e portas para apontar para seus CLPs reais",
+  "_simulate":   "Execute com --simulate para usar o simulador embutido (sem CLPs reais)",
+
+  "server": {
+    "port":       3001,
+    "host":       "0.0.0.0",
+    "poll_ms":    1000,
+    "cmd_timeout_ms": 3000
+  },
+
+  "mqtt": {
+    "enabled":   false,
+    "broker":    "mqtt://localhost:1883",
+    "username":  "",
+    "password":  "",
+    "topic_root":"cgh/scada"
+  },
+
+  "plants": [
+    {
+      "id":   "dario",
+      "name": "CGH DÁRIO",
+      "units": [
+        {
+          "id":       "UG-01",
+          "rated_kw": 1790,
+          "rated_v":  440,
+          "ten_str":  "440",
+          "plc": { "host": "192.168.1.10", "port": 502, "slave": 1 }
+        },
+        {
+          "id":       "UG-02",
+          "rated_kw": 1897,
+          "rated_v":  440,
+          "ten_str":  "440",
+          "plc": { "host": "192.168.1.11", "port": 502, "slave": 1 }
+        }
+      ]
+    },
+    {
+      "id":   "garcia",
+      "name": "CGH GARCIA",
+      "units": [
+        {
+          "id":       "UG-01",
+          "rated_kw": 2201,
+          "rated_v":  6600,
+          "ten_str":  "6.6 kV",
+          "plc": { "host": "192.168.1.20", "port": 502, "slave": 1 }
+        },
+        {
+          "id":       "UG-02",
+          "rated_kw": 2192,
+          "rated_v":  6600,
+          "ten_str":  "6.6 kV",
+          "plc": { "host": "192.168.1.21", "port": 502, "slave": 1 }
+        }
+      ]
+    },
+    {
+      "id":   "folha",
+      "name": "CGH FOLHA VERDE",
+      "units": [
+        {
+          "id":       "UG-01",
+          "rated_kw": 3643,
+          "rated_v":  13800,
+          "ten_str":  "13.8 kV",
+          "plc": { "host": "192.168.1.30", "port": 502, "slave": 1 }
+        }
+      ]
+    },
+    {
+      "id":   "lourdes",
+      "name": "CGH LOURDES",
+      "units": [
+        {
+          "id":       "UG-01",
+          "rated_kw": 1182,
+          "rated_v":  440,
+          "ten_str":  "440",
+          "plc": { "host": "192.168.1.40", "port": 502, "slave": 1 }
+        },
+        {
+          "id":       "UG-02",
+          "rated_kw": 1218,
+          "rated_v":  440,
+          "ten_str":  "440",
+          "plc": { "host": "192.168.1.41", "port": 502, "slave": 1 }
+        }
+      ]
+    },
+    {
+      "id":   "campo",
+      "name": "CGH CAMPO BONITO",
+      "units": [
+        {
+          "id":       "UG-01",
+          "rated_kw": 4629,
+          "rated_v":  13800,
+          "ten_str":  "13.8 kV",
+          "plc": { "host": "192.168.1.50", "port": 502, "slave": 1 }
+        }
+      ]
+    },
+    {
+      "id":   "piramide",
+      "name": "CGH PIRÂMIDE",
+      "units": [
+        {
+          "id":       "UG-01",
+          "rated_kw": 1799,
+          "rated_v":  440,
+          "ten_str":  "440",
+          "plc": { "host": "192.168.1.60", "port": 502, "slave": 1 }
+        },
+        {
+          "id":       "UG-02",
+          "rated_kw": 1741,
+          "rated_v":  440,
+          "ten_str":  "440",
+          "plc": { "host": "192.168.1.61", "port": 502, "slave": 1 }
+        }
+      ]
+    }
+  ],
+
+  "modbus_map": {
+    "_info": "Mapa de registros Modbus — ajuste conforme documentação do seu CLP",
+    "input_registers": {
+      "start_address": 0,
+      "map": {
+        "0":  { "tag": "pot_ativa",       "factor": 0.1,   "unit": "kW"  },
+        "1":  { "tag": "pot_reativa",     "factor": 0.1,   "unit": "kVAr", "signed": true },
+        "2":  { "tag": "pot_aparente",    "factor": 0.1,   "unit": "kVA" },
+        "3":  { "tag": "fator_pot",       "factor": 0.001, "unit": ""    },
+        "4":  { "tag": "tensao_a",        "factor": 0.1,   "unit": "V"   },
+        "5":  { "tag": "tensao_b",        "factor": 0.1,   "unit": "V"   },
+        "6":  { "tag": "tensao_c",        "factor": 0.1,   "unit": "V"   },
+        "7":  { "tag": "corrente_a",      "factor": 0.1,   "unit": "A"   },
+        "8":  { "tag": "corrente_b",      "factor": 0.1,   "unit": "A"   },
+        "9":  { "tag": "corrente_c",      "factor": 0.1,   "unit": "A"   },
+        "10": { "tag": "velocidade",      "factor": 0.1,   "unit": "rpm" },
+        "11": { "tag": "frequencia",      "factor": 0.01,  "unit": "Hz"  },
+        "12": { "tag": "distribuidor",    "factor": 0.1,   "unit": "%"   },
+        "13": { "tag": "tensao_excitacao","factor": 0.1,   "unit": "Vcc", "signed": true },
+        "14": { "tag": "corrente_excitacao","factor":0.1,  "unit": "Acc", "signed": true },
+        "15": { "tag": "temp_fase_a",     "factor": 0.1,   "unit": "°C", "signed": true  },
+        "16": { "tag": "temp_fase_b",     "factor": 0.1,   "unit": "°C", "signed": true  },
+        "17": { "tag": "temp_fase_c",     "factor": 0.1,   "unit": "°C", "signed": true  },
+        "18": { "tag": "temp_mancal_esc", "factor": 0.1,   "unit": "°C", "signed": true  },
+        "19": { "tag": "temp_mancal_ce",  "factor": 0.1,   "unit": "°C", "signed": true  },
+        "20": { "tag": "temp_mancal_lna", "factor": 0.1,   "unit": "°C", "signed": true  },
+        "21": { "tag": "temp_vedacao",    "factor": 0.1,   "unit": "°C", "signed": true  },
+        "22": { "tag": "temp_uhrv",       "factor": 0.1,   "unit": "°C", "signed": true  },
+        "23": { "tag": "temp_excitatriz", "factor": 0.1,   "unit": "°C", "signed": true  },
+        "24": { "tag": "pressao_oleo",    "factor": 0.1,   "unit": "bar" },
+        "25": { "tag": "pressao_conduto", "factor": 0.01,  "unit": "bar" },
+        "26": { "tag": "pressao_caixa",   "factor": 0.01,  "unit": "bar" }
+      }
+    },
+    "discrete_inputs": {
+      "start_address": 0,
+      "map": {
+        "0":  "status_gerando",
+        "1":  "status_parada",
+        "2":  "status_trip",
+        "3":  "dj_fechado",
+        "4":  "campo_ligado",
+        "5":  "borboleta_aberta",
+        "6":  "borboleta_fechada",
+        "7":  "bypass_aberto",
+        "8":  "bypass_fechada",
+        "9":  "mb1_ligada",
+        "10": "mb1_defeito",
+        "11": "mb2_ligada",
+        "12": "mb2_defeito",
+        "13": "nivel_alto",
+        "14": "poco_sem_energia",
+        "15": "automatico",
+        "16": "bloqueio_86h",
+        "17": "bloqueio_86m",
+        "18": "bloqueio_86e",
+        "19": "bloqueio_94p",
+        "20": "valv_reposicao",
+        "21": "motobomba_ligada"
+      }
+    },
+    "coils": {
+      "start_address": 0,
+      "commands": {
+        "PARAR":       0,
+        "UHRV":        1,
+        "BORBOLETA":   2,
+        "RODAR":       3,
+        "EXCITAR":     4,
+        "SINCRONIZAR": 5,
+        "FECHAR_DJ":   6,
+        "EMERGENCIA":  7,
+        "REARMAR":     8
+      }
+    },
+    "holding_setpoints": {
+      "start_address": 100,
+      "map": {
+        "SETPOINT_POT":  100,
+        "SETPOINT_REAT": 101,
+        "SETPOINT_TEN":  102
+      }
+    }
+  }
+}
