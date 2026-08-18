@@ -1,0 +1,1208 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Painel Geral de Usinas</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@500;600;700&family=Inter:wght@300;400;500;600&display=swap');
+:root{
+  --bg:#0b0b0e;--card:#111115;--card2:#0e0e12;--card3:#161618;
+  --border:#1c1c24;--border2:#252530;
+  --txt:#e0e0e8;--txt2:#6e6e80;--txt3:#2a2a34;
+  --green:#00e676;--red:#ff1744;--orange:#ff9100;--blue:#40c4ff;--gray:#44444e;
+  --mono:'Share Tech Mono',monospace;--raj:'Rajdhani',sans-serif;--ui:'Inter',sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;overflow:hidden}
+body{background:var(--bg);color:var(--txt);font-family:var(--ui);display:flex;flex-direction:column}
+/* HEADER */
+.hdr{height:48px;background:#0d0d12;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;padding:0 14px;flex-shrink:0;gap:8px}
+.hdr-logo{display:flex;align-items:center;gap:8px;min-width:210px}
+.hdr-bolt{font-size:18px;color:var(--green);filter:drop-shadow(0 0 5px var(--green))}
+.hdr-title{font-family:var(--raj);font-size:15px;font-weight:700;letter-spacing:1.5px;
+  display:flex;flex-direction:column;line-height:1.1}
+.hdr-sub{font-size:7.5px;color:var(--txt2);letter-spacing:2px}
+.hdr-kpis{display:flex;gap:5px}
+.kpi-box{border:1px solid var(--border2);border-radius:4px;padding:3px 14px;text-align:center;min-width:88px}
+.kpi-box.kg{border-color:var(--green);background:rgba(0,230,118,.06)}
+.kpi-box.kb{border-color:var(--blue);background:rgba(64,196,255,.06)}
+.kpi-box.kr{border-color:var(--red);background:rgba(255,23,68,.1)}
+.kpi-v{font-family:var(--mono);font-size:17px;line-height:1.1}
+.kpi-v.kgv{color:var(--green)}.kpi-v.kbv{color:var(--blue)}.kpi-v.krv{color:var(--red)}.kpi-v.knv{color:#d0d0e0}
+.kpi-l{font-size:7px;color:var(--txt2);letter-spacing:.07em;text-transform:uppercase;margin-top:1px}
+.hdr-right{display:flex;align-items:center;gap:10px;min-width:210px;justify-content:flex-end}
+.legend{display:flex;gap:8px;font-size:9.5px;color:var(--txt2);align-items:center}
+.ldot{width:7px;height:7px;border-radius:50%;display:inline-block;margin-right:3px}
+.chart-btn{background:var(--card3);border:1px solid var(--border2);border-radius:4px;color:var(--blue);
+  padding:4px 9px;cursor:pointer;font-size:10px;font-weight:600;display:flex;align-items:center;
+  gap:4px;font-family:var(--ui);transition:background .15s}
+.chart-btn:hover{background:#1a1a22;border-color:var(--blue)}
+.hdr-clock{font-family:var(--mono);font-size:10px;color:var(--txt2);text-align:right;line-height:1.5}
+/* GRID */
+.grid{flex:1;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(2,1fr);
+  gap:1px;background:var(--border);padding:1px;overflow:hidden}
+/* PLANT CARD */
+.pc{background:var(--card);display:flex;flex-direction:column;overflow:hidden;border-left:3px solid transparent}
+.pc.p-ok{border-left-color:var(--green)}.pc.p-alarm{border-left-color:var(--orange)}
+.pc.p-trip{border-left-color:var(--red)}.pc.p-stop{border-left-color:var(--blue)}
+.pc-hdr{display:flex;align-items:flex-start;justify-content:space-between;
+  padding:5px 10px 4px;background:#111116;border-bottom:1px solid var(--border);flex-shrink:0}
+.pc-name{font-family:var(--raj);font-size:13px;font-weight:700;letter-spacing:1.5px;color:#d0d0da}
+.pc-sub{font-size:7.5px;color:var(--txt2);margin-top:1px}
+.pc-mw-v{font-family:var(--mono);font-size:15px;font-weight:700}
+.pc-mw-v.mok{color:var(--green)}.pc-mw-v.malarm{color:var(--orange)}
+.pc-mw-v.mtrip{color:var(--red)}.pc-mw-v.mstop{color:var(--blue)}
+.pc-mw-l{font-size:7px;color:var(--txt2);letter-spacing:.06em;text-transform:uppercase;text-align:right}
+.pc-body{flex:1;display:flex;gap:1px;background:var(--border);overflow:hidden}
+/* UG CARD */
+.ugc{flex:1;display:flex;flex-direction:column;background:var(--card2);overflow:hidden;
+  cursor:pointer;transition:background .12s;border:1px solid transparent}
+.ugc:hover{background:#111116}
+.ugc.ug-alarm{border-color:rgba(255,23,68,.7);background:rgba(255,23,68,.03)}
+.ugc.ug-trip{border-color:var(--red);background:rgba(255,23,68,.06);animation:tblink .9s ease-in-out infinite}
+@keyframes tblink{0%,100%{border-color:rgba(255,23,68,1)}50%{border-color:rgba(255,23,68,.15)}}
+.ugc.ug-parada{border-color:rgba(64,196,255,.6);background:rgba(64,196,255,.03)}
+/* UG HEADER */
+.ug-hdr{display:flex;align-items:center;justify-content:space-between;
+  padding:4px 7px;border-bottom:1px solid var(--border);flex-shrink:0}
+.ug-id{font-family:var(--raj);font-size:12px;font-weight:700;color:#777;letter-spacing:1px}
+.ug-badge{font-size:8px;font-weight:700;letter-spacing:.06em;padding:2px 7px;border-radius:2px;text-transform:uppercase}
+.ug-badge.bok{background:rgba(0,230,118,.18);color:var(--green);border:1px solid rgba(0,230,118,.3)}
+.ug-badge.balarm{background:rgba(255,23,68,.18);color:var(--red);border:1px solid rgba(255,23,68,.3)}
+.ug-badge.btrip{background:rgba(255,23,68,.28);color:var(--red);border:1px solid var(--red);animation:blink .7s ease-in-out infinite}
+.ug-badge.bparada{background:rgba(64,196,255,.18);color:var(--blue);border:1px solid rgba(64,196,255,.35)}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.1}}
+/* POWER */
+.pot-row{display:flex;align-items:baseline;gap:4px;justify-content:space-between;padding:5px 7px 2px;flex-shrink:0}
+.pot-num{font-family:var(--mono);font-size:24px;color:#fff;line-height:1}
+.pot-num.pnalarm{color:var(--red)}.pot-num.pntrip{color:var(--red);animation:blink .7s ease-in-out infinite}
+.pot-num.pnparada{color:var(--blue);font-size:20px}
+.pot-ku{font-size:10px;color:var(--txt2)}.pot-pct{font-family:var(--mono);font-size:10px;color:var(--txt2)}
+.pot-pct.pctrip{color:var(--red);animation:blink .7s ease-in-out infinite}.pot-pct.pcparada{color:var(--blue)}
+/* BAR */
+.bar-wrap{padding:0 7px 3px;flex-shrink:0}
+.bar-track{height:4px;background:#1a1a22;border-radius:2px;overflow:hidden}
+.bar-fill{height:100%;border-radius:2px;transition:width 1.2s ease}
+.bar-fill.bok{background:var(--green);box-shadow:0 0 5px rgba(0,230,118,.4)}
+.bar-fill.balarm{background:var(--red)}.bar-fill.btrip{background:var(--red);width:0!important}
+.bar-fill.bparada{background:var(--blue);width:0!important}
+/* METRICS */
+.metrics{display:grid;grid-template-columns:1fr 1fr;padding:0 4px;gap:0;align-content:start;flex:1}
+.met{padding:2px 3px;border-bottom:1px solid rgba(28,28,36,.9)}
+.met:nth-child(odd){border-right:1px solid rgba(28,28,36,.9)}
+.met-l{font-size:9px;color:#e0e0e8;letter-spacing:.03em;font-weight:500}
+.met-v{font-family:var(--mono);font-size:12px;color:var(--txt)}
+.met-v.mwarn{color:var(--orange)}.met-v.moff{color:#1e1e28}
+.met-v.mtrip{color:var(--red);animation:blink .7s ease-in-out infinite}.met-v.mparada{color:var(--blue)}
+/* FOOTER */
+.temp-foot{display:flex;align-items:center;justify-content:space-between;
+  padding:3px 7px;border-top:1px solid var(--border);flex-shrink:0;background:#0d0d10}
+.temp-tags{display:flex;gap:5px}
+.tt{font-size:8.5px;font-family:var(--mono)}
+.tt-lbl{color:var(--txt2)}.tt-ok{color:var(--txt)}.tt-warm{color:var(--orange)}
+.tt-hot{color:var(--red)}.tt-trip{color:var(--red);animation:blink .7s ease-in-out infinite}
+.tt-stop{color:var(--blue)}
+.alm-tag{font-size:8.5px;font-family:var(--mono);font-weight:700;padding:1px 5px;border-radius:2px}
+.alm-0{color:var(--txt3)}.alm-n{background:rgba(255,23,68,.2);color:var(--red);border:1px solid rgba(255,23,68,.4)}
+/* TICKER */
+.ticker{height:22px;background:#0e080a;border-top:1px solid #2a1018;
+  display:flex;align-items:center;overflow:hidden;flex-shrink:0}
+.tick-lbl{font-size:8px;font-weight:700;color:var(--red);letter-spacing:.08em;
+  padding:0 10px;border-right:1px solid #2a1018;white-space:nowrap;flex-shrink:0}
+.tick-wrap{flex:1;overflow:hidden;position:relative;height:100%}
+.tick-txt{position:absolute;white-space:nowrap;font-size:8px;color:#e07070;font-family:var(--mono);
+  top:50%;transform:translateY(-50%);animation:ticker 38s linear infinite}
+@keyframes ticker{0%{left:100%}100%{left:-400%}}
+/* MODALS */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.86);z-index:50;
+  display:flex;align-items:center;justify-content:center}
+.overlay.hidden{display:none}
+.mbox{background:#111116;border:1px solid var(--border2);border-radius:8px;overflow:hidden}
+.mhdr{display:flex;align-items:center;justify-content:space-between;
+  padding:11px 15px;background:#161618;border-bottom:1px solid var(--border)}
+.mtitle{font-family:var(--raj);font-size:15px;font-weight:700;letter-spacing:1.5px;display:flex;align-items:center;gap:7px}
+.mclose{background:transparent;border:1px solid var(--border2);color:var(--txt2);
+  border-radius:3px;padding:3px 11px;cursor:pointer;font-size:11px;font-family:var(--ui)}
+.mclose:hover{background:#222228}
+/* CHART */
+.ctabs{display:flex;gap:6px;margin-bottom:10px}
+.ctab{background:var(--card3);border:1px solid var(--border2);border-radius:3px;
+  color:var(--txt2);padding:4px 12px;cursor:pointer;font-size:10.5px;font-family:var(--ui);transition:all .12s}
+.ctab.active{background:rgba(0,230,118,.1);border-color:var(--green);color:var(--green)}
+.csum{display:grid;grid-template-columns:repeat(7,1fr);gap:7px;margin-top:11px;
+  padding-top:11px;border-top:1px solid var(--border)}
+.cs-item{text-align:center}
+.cs-name{font-size:7.5px;color:var(--txt2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px}
+.cs-val{font-family:var(--mono);font-size:12px;color:var(--txt)}
+.cs-sub{font-size:7.5px;color:var(--txt2)}
+/* POPUP */
+.pop-hdr{padding:9px 13px;background:#161618;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between}
+.pop-title{font-family:var(--raj);font-size:14px;font-weight:700;letter-spacing:1.5px;
+  display:flex;align-items:center;gap:7px}
+.pbadge{font-size:8.5px;font-weight:700;padding:2px 7px;border-radius:2px;text-transform:uppercase;letter-spacing:.05em}
+.pbody{padding:13px}
+.pop-val{display:flex;align-items:baseline;gap:5px;margin-bottom:8px;
+  padding-bottom:8px;border-bottom:1px solid var(--border)}
+.pop-kw{font-family:var(--mono);font-size:34px;line-height:1}
+.pop-kw.pkok{color:#fff}.pop-kw.pktrip{color:var(--red);animation:blink .7s ease-in-out infinite}
+.pop-kw.pkparada{color:var(--blue)}
+.pop-ku{font-size:13px;color:var(--txt2)}.pop-pct{font-family:var(--mono);font-size:13px;color:var(--txt2);margin-left:auto}
+.pop-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:9px}
+.pop-m{background:var(--card3);border:1px solid var(--border);border-radius:3px;padding:6px 8px}
+.pop-ml{font-size:8px;color:var(--txt2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px}
+.pop-mv{font-family:var(--mono);font-size:13px;color:var(--txt)}
+.pop-mu{font-size:8.5px;color:var(--txt2)}
+.pop-temps{display:flex;gap:7px;padding:7px;background:var(--card3);
+  border-radius:3px;border:1px solid var(--border);margin-bottom:9px}
+.pt-it{text-align:center;flex:1}
+.pt-l{font-size:7px;color:var(--txt2);text-transform:uppercase;letter-spacing:.04em;margin-bottom:2px}
+.pt-v{font-family:var(--mono);font-size:12px}
+.pt-ok{color:var(--txt)}.pt-warm{color:var(--orange)}.pt-hot{color:var(--red)}
+.info-box{border-radius:4px;padding:8px;margin-bottom:9px;font-size:10px}
+.info-trip{background:rgba(255,23,68,.07);border:1px solid rgba(255,23,68,.2)}
+.info-stop{background:rgba(64,196,255,.06);border:1px solid rgba(64,196,255,.2)}
+.info-lbl{font-weight:600;margin-bottom:2px}
+.info-trip .info-lbl{color:var(--red)}.info-stop .info-lbl{color:var(--blue)}
+.info-txt{color:var(--txt2)}
+.pop-btns{display:flex;gap:6px}
+.abtn{flex:1;padding:8px 3px;border-radius:4px;border:1px solid var(--border2);cursor:pointer;
+  font-size:10.5px;font-weight:600;font-family:var(--ui);transition:all .12s;text-align:center}
+.abtn-close{background:var(--card3);color:var(--txt2)}.abtn-close:hover{background:#222228}
+.abtn-open{background:rgba(64,196,255,.1);color:var(--blue);border-color:rgba(64,196,255,.4)}
+.abtn-open:hover{background:rgba(64,196,255,.2)}
+.abtn-stop{background:rgba(255,23,68,.1);color:var(--red);border-color:rgba(255,23,68,.4)}
+.abtn-stop:hover{background:rgba(255,23,68,.2)}
+.abtn-restart{background:rgba(0,230,118,.1);color:var(--green);border-color:rgba(0,230,118,.4)}
+.abtn-restart:hover{background:rgba(0,230,118,.2)}
+.abtn-trip{background:rgba(255,145,0,.1);color:var(--orange);border-color:rgba(255,145,0,.4)}
+/* STOP MODAL */
+.stop-overlay{position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:70;
+  display:flex;align-items:center;justify-content:center}
+.stop-overlay.hidden{display:none}
+.stop-box{background:#111116;border:1px solid rgba(255,23,68,.3);border-radius:8px;
+  width:510px;max-height:92vh;display:flex;flex-direction:column;overflow:hidden}
+.stop-hdr{padding:11px 15px;background:rgba(255,23,68,.07);border-bottom:1px solid rgba(255,23,68,.2);
+  display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.stop-title{font-family:var(--raj);font-size:14px;font-weight:700;letter-spacing:1.5px;color:var(--red)}
+.stop-body{padding:13px;overflow-y:auto;flex:1}
+.stop-info{display:flex;align-items:center;gap:10px;padding:9px 11px;
+  background:rgba(255,23,68,.06);border:1px solid rgba(255,23,68,.15);border-radius:4px;margin-bottom:12px}
+.stop-ug-name{font-family:var(--raj);font-size:13px;font-weight:700;letter-spacing:1px}
+.stop-ug-sub{font-size:9.5px;color:var(--txt2);margin-top:2px}
+.cat-lbl{font-size:7.5px;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:.1em;
+  padding:4px 0 3px;border-bottom:1px solid var(--border);margin-bottom:5px}
+.reason-item{display:flex;align-items:center;gap:9px;padding:6px 9px;border-radius:4px;
+  border:1px solid var(--border);cursor:pointer;font-size:10.5px;color:var(--txt2);
+  transition:all .12s;margin-bottom:3px}
+.reason-item:hover{background:var(--card3);border-color:var(--border2);color:var(--txt)}
+.reason-item.sel{background:rgba(255,23,68,.08);border-color:rgba(255,23,68,.4);color:var(--red)}
+.reason-dot{width:8px;height:8px;border-radius:50%;border:1.5px solid #444;flex-shrink:0;transition:all .12s}
+.reason-item.sel .reason-dot{background:var(--red);border-color:var(--red)}
+.stop-field{font-size:8px;color:var(--txt2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;margin-top:9px}
+.stop-input{width:100%;background:var(--card3);border:1px solid var(--border2);border-radius:3px;
+  color:var(--txt);font-family:var(--ui);font-size:10.5px;padding:6px 8px;outline:none}
+.stop-input:focus{border-color:rgba(255,23,68,.4)}
+.stop-foot{display:flex;gap:7px;padding:11px 13px;border-top:1px solid var(--border);background:#0d0d12;flex-shrink:0}
+.stop-cancel{flex:1;padding:8px;border-radius:4px;border:1px solid var(--border2);
+  background:var(--card3);color:var(--txt2);font-size:11px;font-weight:600;cursor:pointer;font-family:var(--ui)}
+.stop-confirm{flex:2;padding:8px;border-radius:4px;border:1px solid rgba(255,23,68,.35);
+  background:rgba(255,23,68,.1);color:var(--red);font-size:11px;font-weight:600;
+  cursor:pointer;font-family:var(--ui);transition:all .12s;opacity:.4;pointer-events:none}
+.stop-confirm.ready{opacity:1;pointer-events:all}.stop-confirm.ready:hover{background:rgba(255,23,68,.2)}
+/* SUPERVISORY */
+.sup-bg{position:fixed;inset:0;z-index:80;background:var(--bg);display:flex;flex-direction:column;overflow:hidden}
+.sup-bg.hidden{display:none}
+.sup-hdr{height:48px;background:#111116;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;padding:0 13px;flex-shrink:0}
+.sup-back{display:flex;align-items:center;gap:7px;background:var(--card3);border:1px solid var(--border2);
+  border-radius:4px;padding:5px 11px;cursor:pointer;color:var(--txt2);font-size:11px;font-family:var(--ui)}
+.sup-back:hover{background:#222228}
+.sup-uid{font-family:var(--raj);font-size:24px;font-weight:700;letter-spacing:2px;color:#d0d0da;margin-left:11px}
+.sup-dot{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green);animation:sdot 2s infinite}
+@keyframes sdot{0%,100%{opacity:1}50%{opacity:.4}}
+.sup-time{font-family:var(--mono);font-size:11px;color:var(--txt2);letter-spacing:.5px}
+.sup-plant{font-family:var(--raj);font-size:14px;font-weight:700;letter-spacing:2px;color:#777}
+.sup-big{display:grid;grid-template-columns:repeat(5,1fr);border-bottom:1px solid var(--border);flex-shrink:0;background:#0d0d12}
+.sbig{text-align:center;padding:9px 5px;border-right:1px solid var(--border)}
+.sbig:last-child{border-right:none}
+.sbig-l{font-size:9px;color:var(--txt2);text-transform:uppercase;letter-spacing:.07em;margin-bottom:3px}
+.sbig-v{font-family:var(--mono);font-size:26px;color:#fff;line-height:1}
+.sbig-u{font-size:10px;color:var(--txt2);margin-left:3px}
+.sup-body{flex:1;display:flex;overflow:hidden}
+.sup-main{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:1px;background:var(--border)}
+.sup-right{width:248px;background:#111116;border-left:1px solid var(--border);display:flex;flex-direction:column;overflow-y:auto;flex-shrink:0}
+.sec{background:var(--card);flex-shrink:0}
+.sec-hdr{background:#1e1e24;text-align:center;padding:3px;font-size:9.5px;font-weight:600;
+  letter-spacing:.08em;color:#777;text-transform:uppercase;border-bottom:1px solid var(--border)}
+.mgrid{display:grid;padding:5px;gap:1px}.mcell{text-align:center;border-right:1px solid var(--border);padding:0 5px}
+.mcell:last-child{border-right:none}
+.ml{font-size:8px;color:var(--txt2);line-height:1.3;min-height:22px;display:flex;align-items:center;justify-content:center;text-align:center}
+.mv{font-family:var(--mono);font-size:11.5px;color:var(--txt);text-align:center;margin-top:2px}
+.tgrid{display:grid;padding:5px;gap:1px}.tcell{text-align:center;border-right:1px solid var(--border);padding:0 4px}
+.tcell:last-child{border-right:none}
+.tl{font-size:7.5px;color:var(--txt2);line-height:1.3;min-height:22px;display:flex;align-items:center;justify-content:center;text-align:center}
+.tv{font-family:var(--mono);font-size:11.5px;text-align:center;margin-top:2px}
+.tv.tok{color:var(--txt)}.tv.twarm{color:var(--orange)}.tv.thot{color:var(--red)}
+.two-col{display:flex;gap:1px;background:var(--border)}.half{flex:1;background:var(--card)}
+.ssh{background:#1a1a20;font-size:9px;font-weight:600;letter-spacing:.07em;color:#555;
+  text-align:center;padding:2px;border-bottom:1px solid var(--border);text-transform:uppercase}
+.uhrv-body{display:flex;padding:5px;gap:2px}
+.ug{flex:1;font-size:9.5px}.ug-sl{background:#1e1e24;text-align:center;border-radius:2px;padding:2px;color:#555;font-size:8.5px;margin-bottom:3px}
+.pval{font-family:var(--mono);font-size:14px;color:var(--txt);text-align:center;margin-bottom:2px}
+.ir{display:flex;align-items:center;gap:4px;padding:1px 0}
+.isq{width:9px;height:9px;border-radius:1px;flex-shrink:0;border:1px solid #333;background:#111}
+.isq.ig{background:var(--green);box-shadow:0 0 3px rgba(0,230,118,.4);border-color:var(--green)}
+.isq.ir2{background:var(--red);border-color:var(--red)}.isq.iy{background:#ffd700;border-color:#ffd700}.isq.ib{background:var(--blue);border-color:var(--blue)}
+.il{font-size:9px;color:var(--txt2)}
+.turb-body{display:grid;grid-template-columns:1fr 1fr 1fr;padding:5px;gap:5px}
+.tgrp{font-size:9.5px}
+.poco-body{display:grid;grid-template-columns:1fr 1fr 1fr;padding:5px;gap:7px}
+.cam-body{display:flex;flex-direction:column;gap:2px;padding:5px}
+.alm-tbl{width:100%;border-collapse:collapse;font-size:9.5px}
+.alm-tbl th{background:#1a1a20;color:var(--txt2);font-size:9px;font-weight:600;padding:3px 7px;border-bottom:1px solid var(--border);text-align:left}
+.alm-tbl td{padding:3px 7px;border-bottom:1px solid #111;font-size:9.5px}
+.alm-tbl tr.aar td{background:rgba(255,23,68,.08)}
+.alm-tbl tr.aar td:last-child{color:var(--red)}
+.alm-foot{display:flex;justify-content:flex-end;gap:7px;padding:5px 7px;background:var(--card);border-top:1px solid var(--border)}
+.afbtn{background:var(--card3);border:1px solid var(--border2);border-radius:3px;
+  color:var(--txt);padding:5px 13px;cursor:pointer;font-size:9.5px;font-weight:600;font-family:var(--ui)}
+.afbtn.reco{border-color:#ffd700;color:#ffd700}.afbtn.hist{border-color:var(--blue);color:var(--blue)}
+.rp-sec{border-bottom:1px solid var(--border)}
+.rp-hdr{background:#1a1a20;font-size:8.5px;font-weight:700;letter-spacing:.1em;color:#555;text-align:center;padding:3px;text-transform:uppercase}
+.rp-body{padding:7px}
+.ctbl{width:100%;border-collapse:collapse;font-size:9px}
+.ctbl th{color:var(--txt2);font-size:8px;font-weight:600;text-align:center;padding:2px;border-bottom:1px solid var(--border)}
+.ctbl td{padding:2px 2px;border-bottom:1px solid #161618;font-size:8.5px;color:var(--txt2)}
+.cv2{font-family:var(--mono);background:#0d0d12;border:1px solid #252530;border-radius:2px;
+  text-align:center;padding:1px 3px;color:var(--txt);font-size:8.5px;display:inline-block;min-width:34px}
+.ca2{font-family:var(--mono);background:rgba(0,230,118,.06);border:1px solid rgba(0,230,118,.2);
+  border-radius:2px;text-align:center;padding:1px 3px;color:var(--green);font-size:8.5px;display:inline-block;min-width:34px}
+.cu2{font-size:7.5px;color:var(--txt2)}
+.prow{display:flex;align-items:center;gap:4px;margin-bottom:4px}
+.pled{width:8px;height:8px;border-radius:50%;background:#222;border:1px solid #333}
+.pled.on{background:var(--green);box-shadow:0 0 4px rgba(0,230,118,.4)}
+.ssbtn{flex:1;background:#222228;border:1px solid var(--border2);border-radius:3px;color:var(--txt);
+  font-size:9.5px;font-weight:600;padding:5px 3px;cursor:pointer;transition:background .12s;font-family:var(--ui);text-align:center}
+.ssbtn:hover{background:#2a2a32}
+.ssbtn.ag{background:rgba(0,230,118,.1);border-color:var(--green);color:var(--green)}
+.ssbtn.ar{background:rgba(255,23,68,.1);border-color:var(--red);color:var(--red)}
+.ssbtn.dj{border-color:#ff6d00;color:#ff6d00}
+.emgbtn{width:100%;padding:10px;background:var(--red);border:none;border-radius:4px;
+  color:#fff;font-family:var(--raj);font-size:14px;font-weight:700;letter-spacing:2px;
+  cursor:pointer;animation:epls 1s ease-in-out infinite;margin-bottom:1px}
+@keyframes epls{0%,100%{box-shadow:0 0 8px rgba(255,23,68,.5)}50%{box-shadow:0 0 18px rgba(255,23,68,.9)}}
+.bsq{width:11px;height:11px;border-radius:2px;background:#1a1a1a;border:1px solid #333}
+.bsq.bon{background:var(--red);border-color:var(--red);box-shadow:0 0 4px rgba(255,23,68,.5)}
+.blbl{font-size:9.5px;color:var(--txt2)}
+.reb{width:100%;padding:5px;background:#1a1400;border:1px solid #6a5000;border-radius:3px;
+  color:#ffd700;font-size:9.5px;font-weight:600;cursor:pointer;margin-top:5px;font-family:var(--ui)}
+/* TOAST */
+.toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%);
+  padding:8px 18px;border-radius:4px;font-family:var(--mono);font-size:9.5px;z-index:200;
+  animation:tin .3s ease-out forwards}
+.toast.tok2{background:#0d2a1a;border:1px solid var(--green);color:var(--green)}
+.toast.terr{background:#2a0d0a;border:1px solid var(--red);color:var(--red)}
+@keyframes tin{from{opacity:0;transform:translateX(-50%) translateY(10px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+</style>
+</head>
+<body>
+
+<header class="hdr">
+  <div class="hdr-logo">
+    <span class="hdr-bolt">&#9889;</span>
+    <div class="hdr-title">PAINEL GERAL DE USINAS<span class="hdr-sub">SUPERVISOR&#205;O SCADA &#8212; OPERA&#199;&#195;O EM TEMPO REAL</span></div>
+  </div>
+  <div class="hdr-kpis">
+    <div class="kpi-box kg"><div class="kpi-v kgv" id="k-mw">--</div><div class="kpi-l">Total MW</div></div>
+    <div class="kpi-box"   ><div class="kpi-v knv" id="k-ugs">--</div><div class="kpi-l">UGs Online</div></div>
+    <div class="kpi-box kb"><div class="kpi-v kbv" id="k-hz">--</div><div class="kpi-l">Hz Sistema</div></div>
+    <div class="kpi-box kr"><div class="kpi-v krv" id="k-alm">--</div><div class="kpi-l">Alarmes</div></div>
+  </div>
+  <div class="hdr-right">
+    <button class="chart-btn" id="btn-chart">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="12" width="4" height="9"/><rect x="10" y="6" width="4" height="15"/><rect x="17" y="3" width="4" height="18"/></svg>
+      Ac&#250;mulo Mensal
+    </button>
+    <div class="legend">
+      <span><span class="ldot" style="background:var(--green)"></span>Gerando</span>
+      <span><span class="ldot" style="background:var(--red)"></span>Alarme / Trip</span>
+      <span><span class="ldot" style="background:var(--blue)"></span>Parada</span>
+    </div>
+    <div id="conn-wrap" style="display:flex;align-items:center;gap:5px;font-family:var(--mono);font-size:9px;color:var(--txt2)"><div id="conn-dot" style="width:7px;height:7px;border-radius:50%;background:#555;box-shadow:none;transition:all .4s"></div><span id="conn-lbl">Offline</span></div><div class="hdr-clock" id="hdr-clock">--:--:--<br>--/--/----</div>
+  </div>
+</header>
+
+<div class="grid" id="main-grid"></div>
+
+<div class="ticker">
+  <span class="tick-lbl">&#9888; ALARME</span>
+  <div class="tick-wrap"><span class="tick-txt">
+    CGH GARCIA &middot; UG-01 &#8212; TRIP por Sobretemperatura Mancal TBN Escora (92&#176;C) &#8212; Rel&#233; 86M Atuado &nbsp;|&nbsp;
+    CGH D&#193;RIO &middot; UG-02 &#8212; Fator de Pot&#234;ncia fora de faixa (0.968) &nbsp;|&nbsp;
+    CGH PIR&#194;MIDE &middot; UG-02 &#8212; Po&#231;o de Drenagem sem Energia
+  </span></div>
+</div>
+
+<!-- CHART MODAL -->
+<div class="overlay hidden" id="modal-chart">
+  <div class="mbox" style="width:920px;max-width:96vw">
+    <div class="mhdr">
+      <div class="mtitle">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2"><rect x="3" y="12" width="4" height="9"/><rect x="10" y="6" width="4" height="15"/><rect x="17" y="3" width="4" height="18"/></svg>
+        Ac&#250;mulo Mensal de Gera&#231;&#227;o &#8212; 2026
+      </div>
+      <div style="display:flex;gap:7px;align-items:center">
+        <div class="ctabs">
+          <button class="ctab active" id="tab-total">Total Sistema</button>
+          <button class="ctab" id="tab-plants">Por Usina</button>
+        </div>
+        <button class="mclose" id="btn-close-chart">&#10005; Fechar</button>
+      </div>
+    </div>
+    <div style="padding:15px">
+      <div style="height:340px;position:relative"><canvas id="chart-canvas"></canvas></div>
+      <div class="csum" id="chart-summary"></div>
+    </div>
+  </div>
+</div>
+
+<!-- UG POPUP -->
+<div class="overlay hidden" id="popup-ug">
+  <div class="mbox" style="width:490px">
+    <div class="pop-hdr">
+      <div class="pop-title" id="pop-title">--</div>
+      <button class="mclose" id="btn-close-popup">&#10005;</button>
+    </div>
+    <div class="pbody" id="pop-body"></div>
+  </div>
+</div>
+
+<!-- STOP REASON MODAL -->
+<div class="stop-overlay hidden" id="modal-stop">
+  <div class="stop-box">
+    <div class="stop-hdr">
+      <div class="stop-title">&#128721; Solicita&#231;&#227;o de Parada</div>
+      <button class="mclose" id="btn-close-stop">&#10005;</button>
+    </div>
+    <div class="stop-body" id="stop-body"></div>
+    <div class="stop-foot">
+      <button class="stop-cancel" id="btn-cancel-stop">Cancelar</button>
+      <button class="stop-confirm" id="btn-confirm-stop">&#128721; Confirmar Parada</button>
+    </div>
+  </div>
+</div>
+
+<!-- SUPERVISORY -->
+<div class="sup-bg hidden" id="view-super">
+  <div class="sup-hdr">
+    <div style="display:flex;align-items:center">
+      <button class="sup-back" id="btn-back-sup">&#127968; Painel Principal</button>
+      <span class="sup-uid" id="sup-uid">UG-01</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:7px">
+      <div class="sup-dot"></div><span class="sup-time" id="sup-time">--:--:--</span>
+    </div>
+    <span class="sup-plant" id="sup-plant">--</span>
+  </div>
+  <div class="sup-big">
+    <div class="sbig"><div class="sbig-l">Pot&#234;ncia Ativa</div><div class="sbig-v"><span id="sb-pot">--</span><span class="sbig-u">kW</span></div></div>
+    <div class="sbig"><div class="sbig-l">Velocidade</div><div class="sbig-v"><span id="sb-vel">--</span><span class="sbig-u">Rpm</span></div></div>
+    <div class="sbig"><div class="sbig-l">Tens&#227;o</div><div class="sbig-v"><span id="sb-ten">--</span><span class="sbig-u" id="sb-ten-u">V</span></div></div>
+    <div class="sbig"><div class="sbig-l">Distribuidor</div><div class="sbig-v"><span id="sb-dist">--</span><span class="sbig-u">%</span></div></div>
+    <div class="sbig"><div class="sbig-l">Frequ&#234;ncia</div><div class="sbig-v"><span id="sb-freq">--</span><span class="sbig-u">Hz</span></div></div>
+  </div>
+  <div class="sup-body">
+    <div class="sup-main">
+      <div class="sec">
+        <div class="sec-hdr">Medi&#231;&#245;es El&#233;tricas</div>
+        <div class="mgrid" style="grid-template-columns:repeat(11,1fr)">
+          <div class="mcell"><div class="ml">Pot. Ativa</div><div class="mv" id="sm-pa">--</div></div>
+          <div class="mcell"><div class="ml">Pot. Reativa</div><div class="mv" id="sm-pr">--</div></div>
+          <div class="mcell"><div class="ml">Pot. Aparente</div><div class="mv" id="sm-pap">--</div></div>
+          <div class="mcell"><div class="ml">Fator de Pot.</div><div class="mv" id="sm-fp">--</div></div>
+          <div class="mcell"><div class="ml">Tens&#227;o Fase A</div><div class="mv" id="sm-va">--</div></div>
+          <div class="mcell"><div class="ml">Tens&#227;o Fase B</div><div class="mv" id="sm-vb">--</div></div>
+          <div class="mcell"><div class="ml">Tens&#227;o Fase C</div><div class="mv" id="sm-vc">--</div></div>
+          <div class="mcell"><div class="ml">Corrente Fase A</div><div class="mv" id="sm-ia">--</div></div>
+          <div class="mcell"><div class="ml">Corrente Fase B</div><div class="mv" id="sm-ib">--</div></div>
+          <div class="mcell"><div class="ml">Corrente Fase C</div><div class="mv" id="sm-ic">--</div></div>
+          <div class="mcell"><div class="ml">Tens&#227;o Excit.</div><div class="mv" id="sm-vexc">--</div></div>
+        </div>
+      </div>
+      <div class="sec">
+        <div class="sec-hdr">Temperaturas</div>
+        <div class="tgrid" style="grid-template-columns:repeat(9,1fr)">
+          <div class="tcell"><div class="tl">Fase A Gerador</div><div class="tv tok" id="st-fa">--</div></div>
+          <div class="tcell"><div class="tl">Fase B Gerador</div><div class="tv tok" id="st-fb">--</div></div>
+          <div class="tcell"><div class="tl">Fase C Gerador</div><div class="tv tok" id="st-fc">--</div></div>
+          <div class="tcell"><div class="tl">Mancal TBN Escora</div><div class="tv tok" id="st-mte">--</div></div>
+          <div class="tcell"><div class="tl">Mancal TBN C.Escora</div><div class="tv tok" id="st-mce">--</div></div>
+          <div class="tcell"><div class="tl">Mancal TBN LNA</div><div class="tv tok" id="st-lna">--</div></div>
+          <div class="tcell"><div class="tl">Veda&#231;&#227;o do Eixo</div><div class="tv tok" id="st-vei">--</div></div>
+          <div class="tcell"><div class="tl">UHRV</div><div class="tv tok" id="st-uhrv">--</div></div>
+          <div class="tcell"><div class="tl">Excitatriz</div><div class="tv tok" id="st-exc">--</div></div>
+        </div>
+      </div>
+      <div class="sec">
+        <div class="two-col">
+          <div class="half">
+            <div class="ssh">UHRV</div>
+            <div class="uhrv-body">
+              <div class="ug">
+                <div class="ug-sl">Press&#227;o &#211;leo</div>
+                <div class="pval"><span id="su-press">149</span> bar</div>
+                <div class="ug-sl">Motobomba</div>
+                <div class="ir"><div class="isq ig"></div><span class="il">Ligada</span></div>
+                <div class="ir"><div class="isq"></div><span class="il">Desligada</span></div>
+              </div>
+              <div class="ug">
+                <div style="height:18px"></div>
+                <div class="ug-sl">Reposi&#231;&#227;o</div>
+                <div class="ir"><div class="isq iy"></div><span class="il">V&#225;lv. Repo. Lig.</span></div>
+              </div>
+              <div class="ug">
+                <div class="ug-sl">Press. Conduto</div>
+                <div class="pval"><span id="su-cond">4.77</span> bar</div>
+                <div class="ug-sl">Press. Caixa</div>
+                <div class="pval"><span id="su-caixa">1.18</span> bar</div>
+              </div>
+            </div>
+          </div>
+          <div class="half">
+            <div class="ssh">Turbina</div>
+            <div class="turb-body">
+              <div class="tgrp">
+                <div class="ug-sl">Borboleta</div>
+                <div class="ir"><div class="isq"></div><span class="il">Aberta</span></div>
+                <div class="ir"><div class="isq ig"></div><span class="il">Fechada</span></div>
+              </div>
+              <div class="tgrp">
+                <div class="ug-sl">ByPass</div>
+                <div class="ir"><div class="isq"></div><span class="il">Aberta</span></div>
+                <div class="ir"><div class="isq ig"></div><span class="il">Fechada</span></div>
+              </div>
+              <div class="tgrp">
+                <div class="ug-sl">Painel Controle</div>
+                <div style="font-size:8px;color:var(--txt2);margin-bottom:2px">Disjuntor M&#225;q.1</div>
+                <div class="ir"><div class="isq ig"></div><span class="il">Aberto</span></div>
+                <div class="ir"><div class="isq"></div><span class="il">Fechado</span></div>
+                <div style="font-size:8px;color:var(--txt2);margin:3px 0 2px">Chave de Campo</div>
+                <div class="ir"><div class="isq ig"></div><span class="il">Ligada</span></div>
+                <div class="ir"><div class="isq"></div><span class="il">Desligada</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="sec">
+        <div class="two-col">
+          <div class="half" style="flex:2">
+            <div class="ssh">Po&#231;o de Drenagem</div>
+            <div class="poco-body">
+              <div>
+                <div class="ir"><div class="isq"></div><span class="il">N&#237;vel Alto</span></div>
+                <div class="ir"><div class="isq ig"></div><span class="il">MB 1 Ligada</span></div>
+                <div class="ir"><div class="isq"></div><span class="il">MB 1 Defeito</span></div>
+                <div class="ir" style="margin-top:4px"><div class="isq ig"></div><span class="il" style="color:var(--green)">Autom&#225;tico</span></div>
+              </div>
+              <div>
+                <div class="ir"><div class="isq ir2"></div><span class="il" style="color:var(--red)">Po&#231;o sem Energia</span></div>
+                <div class="ir"><div class="isq"></div><span class="il">MB 2 Ligada</span></div>
+                <div class="ir"><div class="isq"></div><span class="il">MB 2 Defeito</span></div>
+              </div>
+              <div></div>
+            </div>
+          </div>
+          <div class="half">
+            <div class="ssh">C&#226;mara de Carga</div>
+            <div class="cam-body">
+              <div class="ir"><div class="isq"></div><span class="il">Aberta</span></div>
+              <div class="ir"><div class="isq ig"></div><span class="il">Reposi&#231;&#227;o</span></div>
+              <div class="ir"><div class="isq"></div><span class="il">Moto Bomba Lig.</span></div>
+              <div class="ir"><div class="isq"></div><span class="il">Autom&#225;tico</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="sec">
+        <table class="alm-tbl">
+          <thead><tr><th></th><th>Data/Hora Entrada</th><th>Data/Hora Reconhecido</th><th style="width:100%">Mensagem</th></tr></thead>
+          <tbody>
+            <tr class="aar"><td style="color:var(--txt2);width:24px;text-align:center;font-family:var(--mono)">0</td><td style="font-family:var(--mono);font-size:9px;width:130px" id="alm-t0">--</td><td style="font-family:var(--mono);font-size:9px;width:130px">--</td><td style="color:var(--red)">Po&#231;o de Drenagem sem Energia</td></tr>
+            <tr><td style="color:var(--txt2);width:24px;text-align:center">1</td><td></td><td></td><td></td></tr>
+            <tr><td style="color:var(--txt2);width:24px;text-align:center">2</td><td></td><td></td><td></td></tr>
+            <tr><td style="color:var(--txt2);width:24px;text-align:center">3</td><td></td><td></td><td></td></tr>
+          </tbody>
+        </table>
+        <div class="alm-foot">
+          <button class="afbtn reco" id="btn-reco-sup">RECONHECER</button>
+          <button class="afbtn hist">HIST&#211;RICO</button>
+        </div>
+      </div>
+    </div>
+    <div class="sup-right">
+      <div class="rp-sec">
+        <div class="rp-hdr">Controles</div>
+        <div class="rp-body">
+          <table class="ctbl">
+            <thead><tr><th></th><th>Atual</th><th></th><th>Atual</th><th></th><th>Ajuste</th><th></th></tr></thead>
+            <tbody>
+              <tr><td style="font-size:8.5px;color:var(--txt2)">Pot. Ativa</td><td><span class="cv2" id="cp-pa">--</span></td><td class="cu2">kW</td><td><span class="cv2" id="cp-pa2">--</span></td><td class="cu2">%</td><td><span class="ca2">100.0</span></td><td class="cu2">%</td></tr>
+              <tr><td style="font-size:8.5px;color:var(--txt2)">Pot. Reativa</td><td><span class="cv2" id="cp-pr">--</span></td><td class="cu2">kVAr</td><td><span class="cv2" id="cp-pr2">--</span></td><td class="cu2">%</td><td><span class="ca2">0.0</span></td><td class="cu2">%</td></tr>
+              <tr><td style="font-size:8.5px;color:var(--txt2)">Tens&#227;o Ger.</td><td><span class="cv2" id="cp-tg">--</span></td><td class="cu2">V</td><td><span class="cv2">100.0</span></td><td class="cu2">%</td><td><span class="ca2">100.0</span></td><td class="cu2">%</td></tr>
+            </tbody>
+          </table>
+          <div style="margin-top:8px;font-size:8px;color:var(--txt2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Ajuste Pot. Ativa</div>
+          <div style="display:flex;align-items:center;gap:6px">
+            <input type="range" id="sp-pot" min="0" max="100" value="100" style="flex:1;accent-color:var(--green);height:4px">
+            <span id="sp-pot-lbl" style="font-family:var(--mono);font-size:10px;color:var(--green);min-width:32px">100%</span>
+          </div>
+        </div>
+      </div>
+      <div class="rp-sec">
+        <div class="rp-hdr">Partida / Parada</div>
+        <div class="rp-body" id="step-btns" style="display:flex;flex-direction:column;gap:3px"></div>
+      </div>
+      <div class="rp-sec" style="padding:7px">
+        <button class="emgbtn" id="emg-btn">EMERG&#202;NCIA</button>
+      </div>
+      <div class="rp-sec">
+        <div class="rp-hdr">Bloqueios</div>
+        <div class="rp-body">
+          <div class="ir" style="padding:2px 0"><div class="bsq" id="bl-86h"></div><span class="blbl">Bloqueio 86H</span></div>
+          <div class="ir" style="padding:2px 0"><div class="bsq" id="bl-86m"></div><span class="blbl">Bloqueio 86M</span></div>
+          <div class="ir" style="padding:2px 0"><div class="bsq" id="bl-86e"></div><span class="blbl">Bloqueio 86E</span></div>
+          <div class="ir" style="padding:2px 0"><div class="bsq" id="bl-94p"></div><span class="blbl">Bloqueio 94P</span></div>
+          <button class="reb" id="btn-rearmar">REARMAR</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+'use strict';
+
+/* ===== DATA ===== */
+var PLANTS = [
+  {id:'dario',   name:'CGH D\u00c1RIO',       sub:'Central Geradora Hidreletrica \u2014 2 UGs', rated:3800,
+   units:[
+    {id:'UG-01',rated:1790,st:'gerando',pot:1771,vel:360.3,ten:440,tenS:'440',dist:72,fp:0.989,fa:68,fb:71,fc:69,m:58,alm:0,ia:2380,ib:2375,ic:2385,vexc:82},
+    {id:'UG-02',rated:1897,st:'alarme', pot:1842,vel:360.7,ten:439,tenS:'439',dist:78,fp:0.968,fa:66,fb:69,fc:67,m:60,alm:1,ia:2510,ib:2508,ic:2515,vexc:85}
+   ]},
+  {id:'garcia',  name:'CGH GARCIA',            sub:'Central Geradora Hidreletrica \u2014 2 UGs', rated:4400,
+   units:[
+    {id:'UG-01',rated:2201,st:'trip',   pot:0,   vel:0,    ten:6600,tenS:'6.6 kV',dist:0, fp:0,    fa:91,fb:89,fc:88,m:92,alm:3,ia:0,ib:0,ic:0,vexc:0,
+     tripReason:'Sobretemperatura Mancal TBN Escora \u2014 Rel\u00e9 86M Atuado'},
+    {id:'UG-02',rated:2192,st:'gerando',pot:2192,vel:300.8,ten:6600,tenS:'6.6 kV',dist:81,fp:0.994,fa:71,fb:73,fc:78,m:63,alm:0,ia:200,ib:199,ic:201,vexc:88}
+   ]},
+  {id:'folha',   name:'CGH FOLHA VERDE',       sub:'Central Geradora Hidreletrica \u2014 1 UG',  rated:3650,
+   units:[
+    {id:'UG-01',rated:3643,st:'gerando',pot:3571,vel:257.4,ten:13800,tenS:'13.8 kV',dist:83,fp:0.981,fa:65,fb:67,fc:64,m:55,alm:0,ia:150,ib:149,ic:151,vexc:95}
+   ]},
+  {id:'lourdes', name:'CGH LOURDES',           sub:'Central Geradora Hidreletrica \u2014 2 UGs', rated:2400,
+   units:[
+    {id:'UG-01',rated:1182,st:'gerando',pot:1158,vel:375.4,ten:440,tenS:'440',dist:78,fp:0.991,fa:62,fb:65,fc:61,m:52,alm:0,ia:1570,ib:1568,ic:1572,vexc:78},
+    {id:'UG-02',rated:1218,st:'parada', pot:0,   vel:0,    ten:440,tenS:'--', dist:0, fp:0,    fa:28,fb:28,fc:26,m:26,alm:0,ia:0,  ib:0,  ic:0,  vexc:0,
+     stopReason:'Manuten\u00e7\u00e3o Preventiva Programada',stopOp:'Operador Silva'}
+   ]},
+  {id:'campo',   name:'CGH CAMPO BONITO',      sub:'Central Geradora Hidreletrica \u2014 1 UG',  rated:4650,
+   units:[
+    {id:'UG-01',rated:4629,st:'gerando',pot:4536,vel:179.6,ten:13800,tenS:'13.8 kV',dist:87,fp:0.996,fa:78,fb:72,fc:69,m:60,alm:0,ia:188,ib:186,ic:190,vexc:102}
+   ]},
+  {id:'piramide',name:'CGH PIR\u00c2MIDE',     sub:'Central Geradora Hidreletrica \u2014 2 UGs', rated:3540,
+   units:[
+    {id:'UG-01',rated:1799,st:'gerando',pot:1781,vel:360.1,ten:440,tenS:'440',dist:75,fp:0.987,fa:67,fb:69,fc:66,m:57,alm:0,ia:2420,ib:2418,ic:2425,vexc:82},
+    {id:'UG-02',rated:1741,st:'alarme', pot:1706,vel:359.7,ten:440,tenS:'440',dist:72,fp:0.989,fa:69,fb:71,fc:68,m:59,alm:1,ia:2320,ib:2318,ic:2325,vexc:80}
+   ]}
+];
+
+var popPlant=null, popUnit=null, supPlant=null, supUnit=null;
+var selectedReason=null, chartInst=null, chartMode='total';
+
+function rnd(b,d){return b+(Math.random()-0.5)*d;}
+function f0(v){return v>0?v.toFixed(0):'--';}
+function f1(v){return v>0?v.toFixed(1):'--';}
+function f2(v){return v>0?v.toFixed(2):'--';}
+function tc(v){return v>=85?'thot':v>=75?'twarm':'tok';}
+function el(id){return document.getElementById(id);}
+function setTxt(id,v){var e=el(id);if(e)e.textContent=v;}
+
+function pStatus(p){
+  if(p.units.some(function(u){return u.st==='trip';}))   return 'p-trip';
+  if(p.units.some(function(u){return u.st==='alarme';})) return 'p-alarm';
+  if(p.units.every(function(u){return u.st==='parada';}))return 'p-stop';
+  return 'p-ok';
+}
+
+/* ===== BUILD UG CARD ===== */
+function buildUG(plant, u){
+  var isT=u.st==='trip', isP=u.st==='parada', isA=u.st==='alarme';
+  var pct=u.pot>0?(u.pot/u.rated*100):0;
+
+  var bc     = isT?'ug-trip':isP?'ug-parada':isA?'ug-alarm':'';
+  var bdgCls = isT?'btrip':isP?'bparada':isA?'balarm':'bok';
+  var bdgTxt = isT?'&#9940; TRIP':isP?'PARADA':isA?'&#9888; ALARME':'GERANDO';
+  var potCls = isT?'pntrip':isP?'pnparada':isA?'pnalarm':'';
+  var pctCls = isT?'pctrip':isP?'pcparada':'';
+  var potVal = isT?'0':isP?'--':u.pot.toFixed(0);
+  var pctTxt = isT?'0%':isP?'--':pct.toFixed(0)+'%';
+  var bfCls  = isT?'btrip':isP?'bparada':isA?'balarm':'bok';
+  var barW   = (isT||isP)?0:pct;
+  var fwarn  = u.freq>0&&(u.freq<59.5||u.freq>60.5);
+
+  var velCls  = isT?'mtrip':isP?'mparada':'';
+  var freqCls = isT?'mtrip':isP?'mparada':fwarn?'mwarn':'';
+  var tenCls  = (isT||isP)?(isT?'mtrip':'mparada'):'';
+  var distCls = isT?'mtrip':isP?'mparada':'';
+  var fpCls   = (isT||isP)?(isT?'mtrip':'mparada'):'';
+
+  var velVal  = isT?'0':isP?'--':f1(u.vel);
+  var freqVal = isT?'0':isP?'--':f2(u.freq);
+  var tenVal  = isT?'0':isP?'--':u.tenS;
+  var distVal = isT?'0':isP?'--':f0(u.dist);
+  var fpVal   = isT?'0.000':isP?'--':u.fp.toFixed(3);
+  var faVal   = isT?('<span style="color:var(--red)">'+u.fa.toFixed(0)+'&#176;C</span>'):isP?'--':(u.fa.toFixed(0)+'&#176;C');
+
+  var fbCls = isT?'tt-trip':isP?'tt-stop':tc(u.fb);
+  var fcCls = isT?'tt-trip':isP?'tt-stop':tc(u.fc);
+  var fmCls = isT?'tt-trip':isP?'tt-stop':tc(u.m);
+  var fbId  = (!isT&&!isP)?(' id="'+plant.id+'-'+u.id+'-fb"'):'';
+  var fcId  = (!isT&&!isP)?(' id="'+plant.id+'-'+u.id+'-fc"'):'';
+  var fmId  = (!isT&&!isP)?(' id="'+plant.id+'-'+u.id+'-m"'):'';
+  var almCls= u.alm>0?'alm-n':'alm-0';
+  var almTxt= u.alm>0?('&#9650; '+u.alm):'';
+
+  var div=document.createElement('div');
+  div.className='ugc'+( bc?' '+bc:'');
+  div.addEventListener('click',function(){openPopup(plant,u);});
+
+  div.innerHTML=
+    '<div class="ug-hdr">'
+     +'<span class="ug-id">'+u.id+'</span>'
+     +'<span class="ug-badge '+bdgCls+'">'+bdgTxt+'</span>'
+    +'</div>'
+    +'<div class="pot-row">'
+     +'<span class="pot-num'+( potCls?' '+potCls:'')+'" id="'+plant.id+'-'+u.id+'-pot">'+potVal+'</span>'
+     +'<span class="pot-ku">kW</span>'
+     +'<span class="pot-pct'+( pctCls?' '+pctCls:'')+'" id="'+plant.id+'-'+u.id+'-pct">'+pctTxt+'</span>'
+    +'</div>'
+    +'<div class="bar-wrap"><div class="bar-track"><div class="bar-fill '+bfCls+'" id="'+plant.id+'-'+u.id+'-bar" style="width:'+barW+'%"></div></div></div>'
+    +'<div class="metrics">'
+     +'<div class="met"><div class="met-l">Velocidade</div><div class="met-v'+( velCls?' '+velCls:'')+'" id="'+plant.id+'-'+u.id+'-vel">'+velVal+'</div></div>'
+     +'<div class="met"><div class="met-l">Frequ\u00eancia</div><div class="met-v'+( freqCls?' '+freqCls:'')+'" id="'+plant.id+'-'+u.id+'-freq">'+freqVal+'</div></div>'
+     +'<div class="met"><div class="met-l">Tens\u00e3o</div><div class="met-v'+( tenCls?' '+tenCls:'')+'" id="'+plant.id+'-'+u.id+'-ten">'+tenVal+'</div></div>'
+     +'<div class="met"><div class="met-l">Distribuidor</div><div class="met-v'+( distCls?' '+distCls:'')+'" id="'+plant.id+'-'+u.id+'-dist">'+distVal+'</div></div>'
+     +'<div class="met"><div class="met-l">Fator Pot.</div><div class="met-v'+( fpCls?' '+fpCls:'')+'" id="'+plant.id+'-'+u.id+'-fp">'+fpVal+'</div></div>'
+     +'<div class="met"><div class="met-l">Fase A Gen.</div><div class="met-v" id="'+plant.id+'-'+u.id+'-fa">'+faVal+'</div></div>'
+    +'</div>'
+    +'<div class="temp-foot">'
+     +'<div class="temp-tags">'
+      +'<span class="tt"><span class="tt-lbl">B:</span><span class="'+fbCls+'"'+fbId+'>'+u.fb.toFixed(0)+'&#176;C</span></span>'
+      +'<span class="tt"><span class="tt-lbl">C:</span><span class="'+fcCls+'"'+fcId+'>'+u.fc.toFixed(0)+'&#176;C</span></span>'
+      +'<span class="tt"><span class="tt-lbl">M:</span><span class="'+fmCls+'"'+fmId+'>'+u.m.toFixed(0)+'&#176;C</span></span>'
+     +'</div>'
+     +'<span class="alm-tag '+almCls+'">'+almTxt+'</span>'
+    +'</div>';
+  return div;
+}
+
+function buildPlant(p){
+  var div=document.createElement('div');
+  var ps=pStatus(p);
+  div.className='pc '+ps;
+  var tot=p.units.reduce(function(a,u){return a+u.pot;},0);
+  var mwCls=ps==='p-trip'?'mtrip':ps==='p-alarm'?'malarm':ps==='p-stop'?'mstop':'mok';
+  var hdr=document.createElement('div');
+  hdr.className='pc-hdr';
+  hdr.innerHTML=
+    '<div><div class="pc-name">'+p.name+'</div><div class="pc-sub">'+p.sub+'</div></div>'
+   +'<div style="text-align:right">'
+    +'<div class="pc-mw-v '+mwCls+'" id="pmw-'+p.id+'">'+(tot/1000).toFixed(3)+' MW</div>'
+    +'<div class="pc-mw-l">Pot\u00eancia Total</div>'
+   +'</div>';
+  var body=document.createElement('div');
+  body.className='pc-body';
+  body.id='pb-'+p.id;
+  p.units.forEach(function(u){body.appendChild(buildUG(p,u));});
+  div.appendChild(hdr);
+  div.appendChild(body);
+  return div;
+}
+
+/* ===== LIVE UPDATE ===== */
+function update(){
+  var totalAlm=0, activeUGs=0, totalPot=0;
+  PLANTS.forEach(function(p){
+    var plantPot=0;
+    p.units.forEach(function(u){
+      if(u.st==='gerando'||u.st==='alarme') activeUGs++;
+      plantPot+=u.pot; totalPot+=u.pot; totalAlm+=u.alm;
+
+      if(u.st==='gerando'||u.st==='alarme'){
+        var pct=u.pot/u.rated*100;
+        var bfCls=u.st==='alarme'?'balarm':'bok';
+        setTxt(p.id+'-'+u.id+'-pot',u.pot.toFixed(0));
+        setTxt(p.id+'-'+u.id+'-pct',pct.toFixed(0)+'%');
+        setTxt(p.id+'-'+u.id+'-vel',f1(u.vel));
+        setTxt(p.id+'-'+u.id+'-freq',f2(u.freq));
+        setTxt(p.id+'-'+u.id+'-dist',f0(u.dist));
+        setTxt(p.id+'-'+u.id+'-fp',u.fp.toFixed(3));
+        setTxt(p.id+'-'+u.id+'-fa',u.fa.toFixed(0)+'\u00b0C');
+        setTxt(p.id+'-'+u.id+'-fb',u.fb.toFixed(0)+'\u00b0C');
+        setTxt(p.id+'-'+u.id+'-fc',u.fc.toFixed(0)+'\u00b0C');
+        setTxt(p.id+'-'+u.id+'-m', u.m.toFixed(0)+'\u00b0C');
+        var efb=el(p.id+'-'+u.id+'-fb');if(efb)efb.className=tc(u.fb);
+        var efc=el(p.id+'-'+u.id+'-fc');if(efc)efc.className=tc(u.fc);
+        var em =el(p.id+'-'+u.id+'-m'); if(em) em.className=tc(u.m);
+        var bar=el(p.id+'-'+u.id+'-bar');
+        if(bar){bar.style.width=pct+'%';bar.className='bar-fill '+bfCls;}
+      }
+    });
+    var ps=pStatus(p);
+    var mwCls=ps==='p-trip'?'mtrip':ps==='p-alarm'?'malarm':ps==='p-stop'?'mstop':'mok';
+    var pmw=el('pmw-'+p.id);
+    if(pmw){pmw.textContent=(plantPot/1000).toFixed(3)+' MW';pmw.className='pc-mw-v '+mwCls;}
+  });
+
+  var activeFreqs=PLANTS.reduce(function(a,p){
+    return a.concat(p.units.filter(function(u){return u.st!=='parada'&&u.st!=='trip'&&u.freq>0;}));
+  },[]);
+  var hz=activeFreqs.length>0?activeFreqs.reduce(function(s,u){return s+u.freq;},0)/activeFreqs.length:0;
+  setTxt('k-mw',(totalPot/1000).toFixed(2));
+  setTxt('k-ugs',activeUGs+'/10');
+  setTxt('k-hz',hz.toFixed(2));
+  setTxt('k-alm',totalAlm);
+  if(supUnit) updateSupervisory();
+}
+
+/* ===== CLOCK ===== */
+function tick(){
+  var n=new Date(); var p=function(v){return String(v).padStart(2,'0');};
+  var ck=el('hdr-clock');
+  if(ck)ck.innerHTML=p(n.getHours())+':'+p(n.getMinutes())+':'+p(n.getSeconds())+'<br>'+n.toLocaleDateString('pt-BR');
+  var st=el('sup-time');
+  if(st)st.textContent=p(n.getHours())+':'+p(n.getMinutes())+':'+p(n.getSeconds());
+}
+
+/* ===== CHART ===== */
+var MONTHS=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+var CUR=5;
+var MWH={
+  dario:   [1820,1780,2050,1960,2130,590,0,0,0,0,0,0],
+  garcia:  [2230,2150,2480,2390,2560,720,0,0,0,0,0,0],
+  folha:   [1850,1790,2060,1990,2170,620,0,0,0,0,0,0],
+  lourdes: [1050,980, 1180,1100,1250,290,0,0,0,0,0,0],
+  campo:   [2350,2280,2620,2510,2740,780,0,0,0,0,0,0],
+  piramide:[1820,1760,2020,1940,2100,600,0,0,0,0,0,0]
+};
+var PCOLORS={dario:'#00e676',garcia:'#40c4ff',folha:'#ffd740',lourdes:'#ff6e40',campo:'#ea80fc',piramide:'#ff4081'};
+var PNAMES={dario:'D\u00c1RIO',garcia:'GARCIA',folha:'FOLHA VERDE',lourdes:'LOURDES',campo:'CAMPO BONITO',piramide:'PIR\u00c2MIDE'};
+
+function renderChart(mode){
+  if(chartInst){chartInst.destroy();chartInst=null;}
+  var months=MONTHS.slice(0,CUR+1);
+  var datasets=[];
+  if(mode==='total'){
+    var tots=months.map(function(_,i){return Object.values(MWH).reduce(function(s,a){return s+a[i];},0);});
+    datasets=[{label:'Total Sistema (MWh)',data:tots,backgroundColor:'rgba(0,230,118,.7)',borderColor:'#00e676',borderWidth:1,borderRadius:3,maxBarThickness:46}];
+  }else{
+    Object.keys(MWH).forEach(function(id){
+      datasets.push({label:PNAMES[id],data:MWH[id].slice(0,CUR+1),backgroundColor:PCOLORS[id]+'cc',borderColor:PCOLORS[id],borderWidth:1,borderRadius:2,maxBarThickness:14});
+    });
+  }
+  var ctx=el('chart-canvas');
+  chartInst=new Chart(ctx,{type:'bar',data:{labels:months,datasets:datasets},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:mode==='plants',position:'top',labels:{color:'#999',boxWidth:11,boxHeight:11,font:{family:'Inter',size:10}}}},
+      scales:{x:{ticks:{color:'#666',font:{family:'Share Tech Mono',size:11}},grid:{color:'#1c1c24'}},
+              y:{ticks:{color:'#666',font:{family:'Share Tech Mono',size:10},callback:function(v){return v.toFixed(0)+' MWh';}},grid:{color:'#1c1c24'}}}}
+  });
+  var cont=el('chart-summary');
+  var ytd=Object.keys(MWH).map(function(id){
+    return{id:id,total:MWH[id].slice(0,CUR+1).reduce(function(a,b){return a+b;},0)};
+  });
+  var html='';
+  ytd.forEach(function(x){
+    html+='<div class="cs-item"><div class="cs-name" style="color:'+PCOLORS[x.id]+'">&#9632; '+PNAMES[x.id]+'</div><div class="cs-val">'+x.total.toFixed(0)+'</div><div class="cs-sub">MWh acum.</div></div>';
+  });
+  var sys=ytd.reduce(function(a,x){return a+x.total;},0);
+  html+='<div class="cs-item" style="border-left:1px solid var(--border);padding-left:7px"><div class="cs-name" style="color:var(--green)">SISTEMA</div><div class="cs-val" style="color:var(--green);font-size:15px">'+sys.toFixed(0)+'</div><div class="cs-sub">MWh YTD 2026</div></div>';
+  cont.innerHTML=html;
+}
+
+/* ===== UG POPUP ===== */
+function openPopup(plant,u){
+  popPlant=plant; popUnit=u;
+  var isT=u.st==='trip', isP=u.st==='parada', isA=u.st==='alarme';
+  var bdgCls=isT?'btrip':isP?'bparada':isA?'balarm':'bok';
+  var stTxt=isT?'&#9940; TRIP':isP?'PARADA':isA?'&#9888; ALARME':'GERANDO';
+  var pct=u.pot>0?(u.pot/u.rated*100):0;
+  var kwCls=isT?'pktrip':isP?'pkparada':'pkok';
+  var bfCls=isT?'btrip':isP?'bparada':isA?'balarm':'bok';
+  var kwVal=isT?'0':isP?'--':u.pot.toFixed(0);
+  var pctTxt=isT?'0%':isP?'--':(pct.toFixed(0)+'% da carga nominal');
+
+  var tTitle=el('pop-title');
+  tTitle.innerHTML=plant.name+' \u2014 '+u.id+' <span class="pbadge '+bdgCls+'">'+stTxt+'</span>';
+
+  var infoBox='';
+  if(isT&&u.tripReason){
+    infoBox='<div class="info-box info-trip"><div class="info-lbl">&#9940; Causa do Trip</div><div class="info-txt">'+u.tripReason+'</div></div>';
+  }else if(isP&&u.stopReason){
+    infoBox='<div class="info-box info-stop"><div class="info-lbl">&#9208; Motivo da Parada</div><div class="info-txt">'+u.stopReason+(u.stopOp?' \u2014 <em>'+u.stopOp+'</em>':'')+'</div></div>';
+  }
+
+  var tempsHtml='';
+  [['Fase A',u.fa],['Fase B',u.fb],['Fase C',u.fc],['Mancal',u.m]].forEach(function(arr){
+    var cls=isT?'pt-hot':tc(arr[1]).replace('t','pt-').replace('ok','pt-ok').replace('warm','pt-warm').replace('hot','pt-hot');
+    // simpler:
+    var ptc=isT?'pt-hot':(arr[1]>=85?'pt-hot':arr[1]>=75?'pt-warm':'pt-ok');
+    tempsHtml+='<div class="pt-it"><div class="pt-l">'+arr[0]+'</div><div class="pt-v '+ptc+'">'+arr[1].toFixed(0)+' \u00b0C</div></div>';
+  });
+
+  var actionBtn='';
+  if(!isP&&!isT){
+    actionBtn='<button class="abtn abtn-stop" id="popup-stop-btn">&#128721; Solicitar Parada</button>';
+  }else if(isP){
+    actionBtn='<button class="abtn abtn-restart">&#9654; Solicitar Religa\u00e7\u00e3o</button>';
+  }else{
+    actionBtn='<button class="abtn abtn-trip">&#9889; Solicitar Rearme</button>';
+  }
+
+  var body=el('pop-body');
+  body.innerHTML=
+    infoBox
+   +'<div class="pop-val">'
+    +'<span class="pop-kw '+kwCls+'">'+kwVal+'</span>'
+    +'<span class="pop-ku">kW</span>'
+    +'<span class="pop-pct">'+pctTxt+'</span>'
+   +'</div>'
+   +'<div style="margin-bottom:9px"><div class="bar-track" style="height:5px"><div class="bar-fill '+bfCls+'" style="width:'+(isT||isP?0:pct)+'%"></div></div></div>'
+   +'<div class="pop-grid">'
+    +'<div class="pop-m"><div class="pop-ml">Velocidade</div><div class="pop-mv">'+(isT?'<span style="color:var(--red)">0</span>':isP?'--':f1(u.vel))+'<span class="pop-mu"> rpm</span></div></div>'
+    +'<div class="pop-m"><div class="pop-ml">Frequ\u00eancia</div><div class="pop-mv">'+(isT?'<span style="color:var(--red)">0</span>':isP?'--':f2(u.freq))+'<span class="pop-mu"> Hz</span></div></div>'
+    +'<div class="pop-m"><div class="pop-ml">Tens\u00e3o</div><div class="pop-mv">'+(isT?'<span style="color:var(--red)">0</span>':isP?'--':u.tenS)+'</div></div>'
+    +'<div class="pop-m"><div class="pop-ml">Distribuidor</div><div class="pop-mv">'+(isT?'<span style="color:var(--red)">0</span>':isP?'--':f0(u.dist))+'<span class="pop-mu"> %</span></div></div>'
+    +'<div class="pop-m"><div class="pop-ml">Fator de Pot.</div><div class="pop-mv">'+(isT?'<span style="color:var(--red)">0.000</span>':isP?'--':u.fp.toFixed(3))+'</div></div>'
+    +'<div class="pop-m"><div class="pop-ml">Alarmes Ativos</div><div class="pop-mv" style="color:'+(u.alm>0?'var(--red)':'var(--green)')+'">'+u.alm+'</div></div>'
+   +'</div>'
+   +'<div class="pop-temps">'+tempsHtml+'</div>'
+   +'<div class="pop-btns">'
+    +'<button class="abtn abtn-close" id="popup-close-btn">Fechar</button>'
+    +actionBtn
+    +'<button class="abtn abtn-open" id="popup-op-btn">&#128295; Tela de Opera\u00e7\u00e3o</button>'
+   +'</div>';
+
+  el('popup-ug').classList.remove('hidden');
+
+  var cb=el('popup-close-btn');if(cb)cb.addEventListener('click',closePopup);
+  var ob=el('popup-op-btn'); if(ob)ob.addEventListener('click',openSupervisory);
+  var sb=el('popup-stop-btn');if(sb)sb.addEventListener('click',openStopModal);
+}
+function closePopup(){el('popup-ug').classList.add('hidden');}
+
+/* ===== STOP MODAL ===== */
+var REASONS=[
+  {cat:'Manuten\u00e7\u00e3o',items:['Manuten\u00e7\u00e3o Preventiva Programada','Manuten\u00e7\u00e3o Corretiva / Falha Mec\u00e2nica','Revis\u00e3o Geral (Overhaul)','Inspe\u00e7\u00e3o / Limpeza Interna']},
+  {cat:'Operacional',items:['Despacho Operacional (ONS / CCEE)','Recurso H\u00eddrico Insuficiente','Restri\u00e7\u00e3o de Rede de Transmiss\u00e3o','Teste de Prote\u00e7\u00f5es El\u00e9tricas']},
+  {cat:'Anomalia / Falha',items:['Trip por Sobretemperatura','Trip por Sobrecorrente / Diferencial','Falha no Sistema UHRV / Regulador','Falha no Sistema de Controle','Falha El\u00e9trica / Curto-circuito']},
+  {cat:'Outro',items:['Outro (especificar na descri\u00e7\u00e3o abaixo)']}
+];
+
+function openStopModal(){
+  selectedReason=null;
+  var u=popUnit, p=popPlant;
+  var html='<div class="stop-info">'
+    +'<span style="font-size:20px">&#9888;</span>'
+    +'<div><div class="stop-ug-name">'+p.name+' \u2014 '+u.id+'</div>'
+    +'<div class="stop-ug-sub">Selecione o motivo e confirme. O registro ficar\u00e1 no hist\u00f3rico operacional.</div></div></div>';
+
+  REASONS.forEach(function(cat){
+    html+='<div class="cat-lbl">'+cat.cat+'</div>';
+    cat.items.forEach(function(r){
+      html+='<div class="reason-item" data-reason="'+r.replace(/"/g,'&quot;')+'"><div class="reason-dot"></div><span>'+r+'</span></div>';
+    });
+  });
+
+  html+='<div class="stop-field">Descri\u00e7\u00e3o Adicional (opcional)</div>'
+     +'<textarea id="stop-desc" class="stop-input" style="resize:none;height:48px" placeholder="Descreva detalhes relevantes..."></textarea>'
+     +'<div class="stop-field" style="margin-top:8px">Respons\u00e1vel pela Solicita\u00e7\u00e3o</div>'
+     +'<input id="stop-op" type="text" class="stop-input" placeholder="Nome do operador...">';
+
+  el('stop-body').innerHTML=html;
+  el('btn-confirm-stop').className='stop-confirm';
+
+  el('stop-body').querySelectorAll('.reason-item').forEach(function(item){
+    item.addEventListener('click',function(){
+      el('stop-body').querySelectorAll('.reason-item').forEach(function(i){i.classList.remove('sel');});
+      item.classList.add('sel');
+      selectedReason=item.getAttribute('data-reason');
+      el('btn-confirm-stop').className='stop-confirm ready';
+    });
+  });
+
+  el('modal-stop').classList.remove('hidden');
+}
+
+function confirmStop(){
+  if(!selectedReason) return;
+  var op=el('stop-op').value.trim()||'Operador';
+  popUnit.st='parada'; popUnit.pot=0; popUnit.vel=0; popUnit.freq=0; popUnit.dist=0;
+  popUnit.stopReason=selectedReason; popUnit.stopOp=op;
+  el('modal-stop').classList.add('hidden');
+  closePopup();
+  var body=el('pb-'+popPlant.id);
+  if(body){body.innerHTML=''; popPlant.units.forEach(function(u){body.appendChild(buildUG(popPlant,u));});}
+  var pc=body?body.closest('.pc'):null;
+  if(pc){pc.className='pc '+pStatus(popPlant);}
+  showToast('\u2713 Parada registrada \u2014 '+popPlant.name+' '+popUnit.id+' | '+selectedReason,'tok2');
+}
+
+/* ===== SUPERVISORY ===== */
+function openSupervisory(){
+  supPlant=popPlant; supUnit=popUnit;
+  closePopup();
+  setTxt('sup-uid',supUnit.id);
+  setTxt('sup-plant',supPlant.name);
+  var t0=el('alm-t0'); if(t0)t0.textContent=new Date().toLocaleString('pt-BR');
+  updateSupervisory();
+  el('view-super').classList.remove('hidden');
+}
+
+function updateSupervisory(){
+  var u=supUnit; if(!u) return;
+  setTxt('sb-pot',u.pot>0?u.pot.toFixed(0):'--');
+  setTxt('sb-vel',u.vel>0?u.vel.toFixed(1):'--');
+  setTxt('sb-ten',u.pot>0?(u.ten<=999?u.ten.toFixed(0):(u.ten/1000).toFixed(1)):'--');
+  var tenu=el('sb-ten-u'); if(tenu)tenu.textContent=u.ten>999?'kV':'V';
+  setTxt('sb-dist',u.dist>0?u.dist.toFixed(2):'--');
+  setTxt('sb-freq',u.freq>0?u.freq.toFixed(2):'--');
+  var pr=u.pot>0?-(u.pot*0.17):0;
+  var pap=u.pot>0?Math.sqrt(u.pot*u.pot+pr*pr):0;
+  var tv=u.ten>999?(u.ten/1000).toFixed(1)+' kV':u.ten.toFixed(0)+' V';
+  setTxt('sm-pa',u.pot>0?u.pot.toFixed(0)+' kW':'--');
+  setTxt('sm-pr',pr?pr.toFixed(2)+' kVAr':'--');
+  setTxt('sm-pap',pap>0?pap.toFixed(0)+' kVA':'--');
+  setTxt('sm-fp',u.fp>0?u.fp.toFixed(2):'--');
+  setTxt('sm-va',u.pot>0?tv:'--'); setTxt('sm-vb',u.pot>0?tv:'--'); setTxt('sm-vc',u.pot>0?tv:'--');
+  setTxt('sm-ia',u.ia>0?u.ia.toFixed(0)+' A':'--');
+  setTxt('sm-ib',u.ib>0?u.ib.toFixed(0)+' A':'--');
+  setTxt('sm-ic',u.ic>0?u.ic.toFixed(0)+' A':'--');
+  setTxt('sm-vexc',u.vexc>0?u.vexc.toFixed(1)+' Vcc':'--');
+  [[u.fa,'st-fa'],[u.fb,'st-fb'],[u.fc,'st-fc'],[u.m+3,'st-mte'],[u.m-2,'st-mce'],[u.m-4,'st-lna'],[42,'st-vei'],[40,'st-uhrv'],[u.fa-5,'st-exc']].forEach(function(arr){
+    var e=el(arr[1]); if(e){e.textContent=arr[0].toFixed(0)+' \u00b0C';e.className='tv '+(arr[0]>=85?'thot':arr[0]>=75?'twarm':'tok');}
+  });
+  setTxt('su-press',rnd(149,2).toFixed(0));
+  setTxt('su-cond',rnd(4.77,0.1).toFixed(2));
+  setTxt('su-caixa',rnd(1.18,0.05).toFixed(2));
+  setTxt('cp-pa',u.pot>0?u.pot.toFixed(0):'--');
+  setTxt('cp-pa2',u.pot>0?(u.pot/u.rated*100).toFixed(1):'--');
+  setTxt('cp-pr',pr?pr.toFixed(0):'--');
+  setTxt('cp-pr2',pr?(pr/u.rated*100).toFixed(1):'--');
+  setTxt('cp-tg',u.ten<=999?u.ten.toFixed(0):(u.ten/1000).toFixed(1));
+}
+
+function closeSupervisory(){supUnit=null;supPlant=null;el('view-super').classList.add('hidden');}
+
+/* partida steps */
+var STEP_NAMES=['PARAR','UHRV','BORBOLETA','RODAR','EXCITAR','SINCRONIZAR','FECHAR DJ'];
+var STEP_CMDS =['PARAR','UHRV','BORBOLETA','RODAR','EXCITAR','SINCRONIZAR','FECHAR_DJ'];
+function buildStepBtns(){
+  var cont=el('step-btns'); if(!cont)return;
+  cont.innerHTML='';
+  STEP_NAMES.forEach(function(name,i){
+    var row=document.createElement('div');
+    row.className='prow';
+    var led=document.createElement('div');
+    led.className='pled'; led.id='sl-'+i;
+    var btn=document.createElement('button');
+    btn.className='ssbtn'+(i===6?' dj':'');
+    btn.textContent=name;
+    btn.addEventListener('click',function(){setStep(i);});
+    row.appendChild(led); row.appendChild(btn);
+    cont.appendChild(row);
+  });
+}
+function setStep(idx){
+  if(supPlant&&supUnit) sendCmd(supPlant.id,supUnit.id,STEP_CMDS[idx]);
+  for(var i=0;i<7;i++){
+    var l=el('sl-'+i);
+    if(l)l.className='pled'+(i<=idx?' on':'');
+    var btns=document.querySelectorAll('.ssbtn');
+    if(btns[i]){
+      btns[i].className='ssbtn'+(i===6?' dj':'');
+      if(i===0&&idx===0) btns[i].classList.add('ar');
+      else if(i<=idx) btns[i].classList.add('ag');
+    }
+  }
+}
+var emgOn=true;
+function toggleEmg(){
+  if(supPlant&&supUnit) sendCmd(supPlant.id,supUnit.id,'EMERGENCIA');
+  emgOn=!emgOn;
+  var b=el('emg-btn');
+  if(!b)return;
+  if(emgOn){b.style.background='var(--red)';b.style.animation='epls 1s ease-in-out infinite';}
+  else{b.style.background='#222228';b.style.animation='none';}
+}
+
+/* ===== TOAST ===== */
+function showToast(msg,cls){
+  var t=document.createElement('div');
+  t.className='toast '+(cls||'tok2');
+  t.textContent=msg;
+  document.body.appendChild(t);
+  setTimeout(function(){t.style.transition='opacity .3s';t.style.opacity='0';setTimeout(function(){t.parentNode&&t.parentNode.removeChild(t);},300);},4000);
+}
+
+/* ===== INIT ===== */
+var grid=el('main-grid');
+PLANTS.forEach(function(p){grid.appendChild(buildPlant(p));});
+buildStepBtns();
+setStep(3);
+
+/* event listeners */
+el('btn-chart').addEventListener('click',function(){el('modal-chart').classList.remove('hidden');setTimeout(function(){renderChart(chartMode);},80);});
+el('btn-close-chart').addEventListener('click',function(){el('modal-chart').classList.add('hidden');if(chartInst){chartInst.destroy();chartInst=null;}});
+el('tab-total').addEventListener('click',function(){chartMode='total';document.querySelectorAll('.ctab').forEach(function(b){b.classList.remove('active');});this.classList.add('active');if(chartInst){chartInst.destroy();chartInst=null;}renderChart('total');});
+el('tab-plants').addEventListener('click',function(){chartMode='plants';document.querySelectorAll('.ctab').forEach(function(b){b.classList.remove('active');});this.classList.add('active');if(chartInst){chartInst.destroy();chartInst=null;}renderChart('plants');});
+el('popup-ug').addEventListener('click',function(e){if(e.target===this)closePopup();});
+el('btn-close-popup').addEventListener('click',closePopup);
+el('btn-close-stop').addEventListener('click',function(){el('modal-stop').classList.add('hidden');});
+el('btn-cancel-stop').addEventListener('click',function(){el('modal-stop').classList.add('hidden');});
+el('btn-confirm-stop').addEventListener('click',confirmStop);
+el('btn-back-sup').addEventListener('click',closeSupervisory);
+el('emg-btn').addEventListener('click',toggleEmg);
+el('btn-rearmar').addEventListener('click',function(){
+  if(supPlant&&supUnit) sendCmd(supPlant.id,supUnit.id,'REARMAR');
+  ['86h','86m','86e','94p'].forEach(function(id){var e=el('bl-'+id);if(e)e.className='bsq';});
+});
+
+/* ── LOCAL SIM FALLBACK ── */
+function localSimTick(){
+  PLANTS.forEach(function(p){
+    p.units.forEach(function(u){
+      if(u.st==='gerando'||u.st==='alarme'){
+        var dk=u.st==='alarme'?0.005:0.003;
+        var cap=u.rated_kw||u.rated||1000;
+        u.pot=Math.max(cap*0.82,rnd(u.pot,cap*dk));
+        u.vel=rnd(u.vel,0.18); u.freq=rnd(u.freq,0.022);
+        u.dist=rnd(u.dist,0.3); u.fa=rnd(u.fa,0.4);
+        u.fb=rnd(u.fb,0.4); u.fc=rnd(u.fc,0.4); u.m=rnd(u.m,0.3);
+      }
+      if(u.st==='trip'){u.pot=0;u.vel=0;u.freq=0;u.dist=0;}
+    });
+  });
+}
+
+/* ── WS + REST BACKEND ── */
+var wsConn=null, wsOk=false, wsPing=null;
+
+function setConn(ok){
+  wsOk=ok;
+  var d=el('conn-dot'),l=el('conn-lbl');
+  if(d){d.style.background=ok?'var(--green)':'var(--red)';
+        d.style.boxShadow =ok?'0 0 5px var(--green)':'0 0 4px var(--red)';}
+  if(l) l.textContent=ok?'Online':'Reconectando...';
+}
+
+function connectWS(){
+  var url=(location.protocol==='https:'?'wss://':'ws://')+location.host;
+  try{ wsConn=new WebSocket(url); }catch(e){ setTimeout(connectWS,3000); return; }
+  wsConn.onopen=function(){
+    setConn(true);
+    if(wsPing) clearInterval(wsPing);
+    wsPing=setInterval(function(){if(wsConn&&wsConn.readyState===1)wsConn.send('{"type":"ping"}');},20000);
+  };
+  wsConn.onmessage=function(e){
+    try{
+      var m=JSON.parse(e.data);
+      if(m.type==='snapshot'||m.type==='data'){if(m.plants) applyServer(m.plants);}
+      else if(m.type==='alarm'&&m.alarm){showToast('⚠ '+m.alarm.ugId+' — '+m.alarm.message,'terr');}
+    }catch(ex){}
+  };
+  wsConn.onclose=function(){setConn(false);if(wsPing){clearInterval(wsPing);wsPing=null;} setTimeout(connectWS,3000);};
+  wsConn.onerror=function(){try{wsConn.close();}catch(ex){}};
+}
+
+function applyServer(srvPlants){
+  srvPlants.forEach(function(sp){
+    var p=PLANTS.find(function(x){return x.id===sp.id;});
+    if(!p) return;
+    sp.units.forEach(function(su){
+      var u=p.units.find(function(x){return x.id===su.id;});
+      if(!u) return;
+      var n=function(a,b){return a!==undefined?a:b;};
+      u.st   =n(su.st,  u.st);   u.pot =n(su.pot, u.pot);
+      u.vel  =n(su.vel, u.vel);  u.freq=n(su.freq,u.freq);
+      u.ten  =n(su.ten, u.ten);  u.dist=n(su.dist,u.dist);
+      u.fp   =n(su.fp,  u.fp);   u.alm =n(su.alm, u.alm);
+      u.fa   =n(su.fa,  u.fa);   u.fb  =n(su.fb,  u.fb);
+      u.fc   =n(su.fc,  u.fc);   u.m   =n(su.mancal_esc,n(su.m,u.m));
+      u.ia   =n(su.ia,  u.ia);   u.ib  =n(su.ib,  u.ib);
+      u.ic   =n(su.ic,  u.ic);   u.vexc=n(su.vexc,u.vexc);
+      u.pressao_oleo =n(su.pressao_oleo, u.pressao_oleo||0);
+      u.pressao_cond =n(su.pressao_cond, u.pressao_cond||0);
+      u.pressao_caixa=n(su.pressao_caixa,u.pressao_caixa||0);
+      ['dj_fechado','campo_ligado','borboleta_aberta','borboleta_fechada',
+       'bypass_aberto','bypass_fechada','mb1_ligada','mb1_defeito','mb2_ligada','mb2_defeito',
+       'nivel_alto','poco_sem_energia','automatico','bloqueio_86h','bloqueio_86m',
+       'bloqueio_86e','bloqueio_94p','valv_reposicao','motobomba_ligada'].forEach(function(k){
+        if(su[k]!==undefined) u[k]=su[k];
+      });
+      if(su.stop_reason) u.stopReason=su.stop_reason;
+      if(su.stop_op)     u.stopOp    =su.stop_op;
+      if(su.tripReason)  u.tripReason=su.tripReason;
+    });
+  });
+  update();
+}
+
+function sendCmd(plantId,ugId,command,value){
+  return fetch('/api/command',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({plantId:plantId,ugId:ugId,command:command,value:value||null})})
+  .then(function(r){return r.json();})
+  .then(function(d){showToast(d.message,d.ok?'tok2':'terr'); return d;})
+  .catch(function(){showToast('Servidor offline — verifique conexão','terr');});
+}
+
+/* Setpoint slider */
+var spSlider=el('sp-pot'), spLbl=el('sp-pot-lbl');
+if(spSlider){
+  spSlider.addEventListener('input',function(){
+    if(spLbl) spLbl.textContent=spSlider.value+'%';
+  });
+  spSlider.addEventListener('change',function(){
+    if(supPlant&&supUnit) sendCmd(supPlant.id,supUnit.id,'SETPOINT_POT',parseFloat(spSlider.value));
+  });
+}
+
+/* RECONHECER na supervisória */
+var recoBtn=el('btn-reco-sup');
+if(recoBtn){
+  recoBtn.addEventListener('click',function(){
+    if(supPlant&&supUnit){
+      fetch('/api/alarms/ack',{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({plantId:supPlant.id,ugId:supUnit.id,operator:'Operador'})})
+      .then(function(r){return r.json();})
+      .then(function(d){showToast(d.message,'tok2');})
+      .catch(function(){});
+    }
+  });
+}
+
+update();
+setInterval(function(){if(!wsOk) localSimTick(); update();}, 2500);
+setInterval(tick,1000);
+tick();
+connectWS();
+
+})();
+</script>
+</body>
+</html>
