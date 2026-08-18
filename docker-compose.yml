@@ -1,0 +1,44 @@
+version: '3.8'
+
+# CGH SCADA — Docker Compose (OPCIONAL)
+# Uso: docker compose up -d
+# Para usar sem Docker, siga o README.md
+
+services:
+
+  # ── Backend SCADA ───────────────────────────────
+  scada:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: cgh-scada
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    environment:
+      - PORT=3001
+      - NODE_ENV=production
+    volumes:
+      - ./config:/app/config
+      - ./logs:/app/logs
+    depends_on:
+      - mosquitto
+    command: ["node", "server.js"]
+    # Para modo simulador: command: ["node", "server.js", "--simulate"]
+
+  # ── MQTT Broker (opcional) ──────────────────────
+  mosquitto:
+    image: eclipse-mosquitto:2
+    container_name: cgh-mosquitto
+    restart: unless-stopped
+    ports:
+      - "1883:1883"
+      - "9001:9001"
+    volumes:
+      - ./mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf
+      - mosquitto-data:/mosquitto/data
+      - mosquitto-log:/mosquitto/log
+
+volumes:
+  mosquitto-data:
+  mosquitto-log:
