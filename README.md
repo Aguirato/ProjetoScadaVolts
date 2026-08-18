@@ -1,5 +1,5 @@
 # CGH SCADA — Backend Completo
-> Sistema supervisório gratuito para Centrais Geradoras Hidrelétricas  
+> Sistema supervisório para Centrais Geradoras Hidrelétricas  || VOLTS Automação Industrial LTDA
 > Node.js · Modbus TCP/RTU · WebSocket · REST API · MQTT opcional
 
 ---
