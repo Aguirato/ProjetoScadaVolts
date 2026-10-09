@@ -507,7 +507,7 @@ cgh-scada/
 
 ## Licença
 
-MIT — uso livre, inclusive comercial.
+
 
 ---
 
